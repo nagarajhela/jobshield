@@ -1,0 +1,75 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 2340 >>
+stream
+BT
+/F1 14 Tf
+45 780 Td
+(JOBSHIELD - AI-POWERED JOB SCAM DETECTOR) Tj
+/F1 10 Tf
+0 -20 Td
+15 TL
+(FULL ARCHITECTURE & SYSTEM DESIGN REPORT) ' 
+(=============================================================) ' 
+() ' 
+(1. EXECUTIVE SUMMARY & HOW IT WORKS) ' 
+(JobShield combines Google Gemini 3.6 Flash, Apache PDFBox document parsing,) ' 
+(and Jaccard keyword pattern matching to protect job seekers from scam offers.) ' 
+(- Step 1: User submits text or uploads offer letter PDF.) ' 
+(- Step 2: Spring Boot backend validates JWT authentication and extracts text.) ' 
+(- Step 3: Google Gemini AI evaluates scam indicators and returns Risk Score.) ' 
+(- Step 4: ScamSimilarityEngine matches patterns \(FEE, WHATSAPP, TELEGRAM\).) ' 
+(- Step 5: Postings >= 80% similarity are grouped into ScamCampaign clusters.) ' 
+(- Step 6: MySQL stores analysis; frontend updates dashboard & history.) ' 
+() ' 
+(2. TECHNOLOGY STACK) ' 
+(- Frontend: React 19, Vite, React Router, Pure CSS \(Cybersecurity Dark Theme\)) ' 
+(- Backend: Java 17, Spring Boot 4.x / 3.x, Spring Security, JWT \(JJWT 0.12.7\)) ' 
+(- AI Engine: Google Gemini 3.6 Flash via Spring RestClient) ' 
+(- Document Engine: Apache PDFBox 3.0.3 \(text extraction from PDFs\)) ' 
+(- Database: MySQL \(jobshield_db\) with Hibernate JPA ORM) ' 
+() ' 
+(3. REACT COMPONENT ARCHITECTURE) ' 
+(- App.jsx: Main routing tree with public and ProtectedRoute gatekeepers.) ' 
+(- api.js: Centralized fetch service with automatic JWT injection & error handling.) ' 
+(- ProtectedRoute.jsx: Guards private pages and renders persistent Sidebar.) ' 
+(- AnalysisResultCard.jsx: Visual score card \(0-100\), AI explanation, and badges.) ' 
+(- DashboardPage.jsx: Live threat metrics and pure CSS risk distribution bar.) ' 
+(- AnalyzeJobPage.jsx: Text analysis form connected to POST /api/jobs/analyze.) ' 
+(- PdfScannerPage.jsx: Drag-and-drop PDF upload connected to /api/jobs/analyze-pdf.) ' 
+(- HistoryPage.jsx: User scan log with modal drilldown \(/api/jobs/{id}\).) ' 
+(- CampaignsPage.jsx: Multi-company scam syndicate intelligence.) ' 
+() ' 
+(4. SAMPLE TEST PDFS PROVIDED) ' 
+(- sample_pdfs/Sample_Scam_Job_Offer_Letter.pdf \(Risk Score: 100 - HIGH\)) ' 
+(- sample_pdfs/Sample_Legitimate_Job_Offer_Letter.pdf \(Risk Score: 10 - LOW\)) ' 
+() ' 
+(Report generated on September 5, 2026. All rights reserved.) ' 
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000002633 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2703
+%%EOF

@@ -1,0 +1,190 @@
+[33mcommit d75be8ec949f312d9f5fa6d68138eeb88e8d4758[m
+Author: Mahesh <mahesh@gmail.com>
+Date:   Sat Aug 1 08:44:12 2026 +0530
+
+    Integrated api
+
+[1mdiff --git a/src/main/java/com/jobshield/ai/AiTestController.java b/src/main/java/com/jobshield/ai/AiTestController.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..0d78156[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/com/jobshield/ai/AiTestController.java[m
+[36m@@ -0,0 +1,22 @@[m
+[32m+[m[32mpackage com.jobshield.ai;[m
+[32m+[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.GetMapping;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.RestController;[m
+[32m+[m
+[32m+[m[32m@RestController[m
+[32m+[m[32mpublic class AiTestController {[m
+[32m+[m
+[32m+[m[32m    private final GeminiService geminiService;[m
+[32m+[m
+[32m+[m[32m    public AiTestController(GeminiService geminiService) {[m
+[32m+[m[32m        this.geminiService = geminiService;[m
+[32m+[m[32m    }[m[41m	[m
+[32m+[m
+[32m+[m[32m    @GetMapping("/api/ai/test")[m
+[32m+[m[32m    public String testAI() {[m
+[32m+[m
+[32m+[m[32m        return geminiService.analyzeJob([m
+[32m+[m[32m                "Pay ₹500 registration fee before interview. Contact only on WhatsApp."[m
+[32m+[m[32m        );[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/jobshield/ai/GeminiRequest.java b/src/main/java/com/jobshield/ai/GeminiRequest.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e69de29[m
+[1mdiff --git a/src/main/java/com/jobshield/ai/GeminiResponse.java b/src/main/java/com/jobshield/ai/GeminiResponse.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e69de29[m
+[1mdiff --git a/src/main/java/com/jobshield/ai/GeminiService.java b/src/main/java/com/jobshield/ai/GeminiService.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e69de29[m
+[1mdiff --git a/src/main/java/com/jobshield/ai/GeminiServiceImpl.java b/src/main/java/com/jobshield/ai/GeminiServiceImpl.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..2955d7c[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/com/jobshield/ai/GeminiServiceImpl.java[m
+[36m@@ -0,0 +1,58 @@[m
+[32m+[m[32mpackage com.jobshield.ai;[m
+[32m+[m
+[32m+[m[32mimport org.springframework.beans.factory.annotation.Value;[m
+[32m+[m[32mimport org.springframework.stereotype.Service;[m
+[32m+[m[32mimport org.springframework.web.client.RestClient;[m
+[32m+[m
+[32m+[m[32mimport com.jobshield.ai.dto.GeminiResponse;[m
+[32m+[m
+[32m+[m[32m@Service[m
+[32m+[m[32mpublic class GeminiServiceImpl implements GeminiService {[m
+[32m+[m
+[32m+[m[32m    private final RestClient restClient;[m
+[32m+[m
+[32m+[m[32m    @Value("${gemini.api.key}")[m
+[32m+[m[32m    private String apiKey;[m
+[32m+[m
+[32m+[m[32m    public GeminiServiceImpl(RestClient restClient) {[m
+[32m+[m[32m        this.restClient = restClient;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public GeminiResponse analyzeJob(String jobDescription) {[m
+[32m+[m
+[32m+[m[32m        String prompt = """[m
+[32m+[m[32m                Analyze the following job posting for scam indicators.[m
+[32m+[m
+[32m+[m[32m                Return ONLY in this format:[m
+[32m+[m
+[32m+[m[32m                Risk Score: <0-100>[m
+[32m+[m[32m                Risk Level: LOW, MEDIUM or HIGH[m
+[32m+[m[32m                Reason: <short explanation>[m
+[32m+[m
+[32m+[m[32m                Job Description:[m
+[32m+[m[32m                """ + jobDescription;[m
+[32m+[m
+[32m+[m[32m        String requestBody = """[m
+[32m+[m[32m                {[m
+[32m+[m[32m                  "contents": [[m
+[32m+[m[32m                    {[m
+[32m+[m[32m                      "parts": [[m
+[32m+[m[32m                        {[m
+[32m+[m[32m                          "text": %s[m
+[32m+[m[32m                        }[m
+[32m+[m[32m                      ][m
+[32m+[m[32m                    }[m
+[32m+[m[32m                  ][m
+[32m+[m[32m                }[m
+[32m+[m[32m                """.formatted("\"" + prompt.replace("\"", "\\\"") + "\"");[m
+[32m+[m
+[32m+[m[32m        return restClient.post()[m
+[32m+[m[32m                .uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent")[m
+[32m+[m[32m                .header("x-goog-api-key", apiKey)[m
+[32m+[m[32m                .header("Content-Type", "application/json")[m
+[32m+[m[32m                .body(requestBody)[m
+[32m+[m[32m                .retrieve()[m
+[32m+[m[32m                .body(GeminiResponse.class);[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/jobshield/ai/package-info.java b/src/main/java/com/jobshield/ai/package-info.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..6df3dd3[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/com/jobshield/ai/package-info.java[m
+[36m@@ -0,0 +1 @@[m
+[32m+[m[32mpackage com.jobshield.ai;[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/jobshield/auth/AiAnalysisResult.java b/src/main/java/com/jobshield/auth/AiAnalysisResult.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..0110a41[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/com/jobshield/auth/AiAnalysisResult.java[m
+[36m@@ -0,0 +1,41 @@[m
+[32m+[m[32mpublic class AiAnalysisResult {[m
+[32m+[m
+[32m+[m[32m    private int riskScore;[m
+[32m+[m[32m    private String riskLevel;[m
+[32m+[m[32m    private String reason;[m
+[32m+[m
+[32m+[m[32m    public AiAnalysisResult() {[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public AiAnalysisResult(int riskScore,[m
+[32m+[m[32m                            String riskLevel,[m
+[32m+[m[32m                            String reason) {[m
+[32m+[m[32m        this.riskScore = riskScore;[m
+[32m+[m[32m        this.riskLevel = riskLevel;[m
+[32m+[m[32m        this.reason = reason;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public int getRiskScore() {[m
+[32m+[m[32m        return riskScore;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void setRiskScore(int riskScore) {[m
+[32m+[m[32m        this.riskScore = riskScore;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public String getRiskLevel() {[m
+[32m+[m[32m        return riskLevel;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void setRiskLevel(String riskLevel) {[m
+[32m+[m[32m        this.riskLevel = riskLevel;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public String getReason() {[m
+[32m+[m[32m        return reason;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void setReason(String reason) {[m
+[32m+[m[32m        this.reason = reason;[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/jobshield/auth/UserController.java b/src/main/java/com/jobshield/auth/UserController.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..1b79ece[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/com/jobshield/auth/UserController.java[m
+[36m@@ -0,0 +1,13 @@[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.GetMapping;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.RequestMapping;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.RestController;[m
+[32m+[m
+[32m+[m[32m@RestController[m
+[32m+[m[32m@RequestMapping("/api/user")[m
+[32m+[m[32mpublic class UserController {[m
+[32m+[m
+[32m+[m[32m    @GetMapping("/dashboard")[m
+[32m+[m[32m    public String dashboard() {[m
+[32m+[m[32m        return "Welcome User";[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/jobshield/auth/com/jobshield/ai/dto/Candidate.java b/src/main/java/com/jobshield/auth/com/jobshield/ai/dto/Candidate.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..3b794ad[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/com/jobshield/auth/com/jobshield/ai/dto/
