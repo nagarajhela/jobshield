@@ -1,0 +1,21 @@
+package com.jobshield.campaign.repository;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.jobshield.campaign.entity.ScamCampaign;
+
+public interface ScamCampaignRepository
+        extends JpaRepository<ScamCampaign, Long> {
+
+    Optional<ScamCampaign> findByCampaignCode(String campaignCode);
+
+    org.springframework.data.domain.Page<ScamCampaign> findByIsActiveTrue(org.springframework.data.domain.Pageable pageable);
+
+    long countByIsActiveTrue();
+
+    java.util.List<ScamCampaign> findAllByOrderByCreatedAtDesc();
+
+    java.util.List<ScamCampaign> findByIsActiveTrueOrderByCreatedAtDesc();
+}

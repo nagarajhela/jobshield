@@ -1,20 +1,88 @@
-/**
- * JobShield API Service
- * Centralized HTTP helper for communicating with the Spring Boot backend.
- * Handles JWT token injection, response parsing, and authentication expiration.
- */
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
-// In local Vite development, using relative URLs ('/api/...') allows the Vite dev server
-// to proxy requests to http://localhost:8081, preventing browser CORS issues without modifying backend code.
-const ENV_URL = import.meta.env.VITE_API_BASE_URL;
-const API_BASE_URL = (import.meta.env.DEV && (!ENV_URL || ENV_URL.includes('localhost:8081')))
-  ? ''
-  : (ENV_URL || 'http://localhost:8081');
+const BASE_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+  'http://localhost:8081';
 
+const apiClient = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const isTokenExpired = (token) => {
+  if (!token) return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (!payload.exp) return false;
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+};
+
+let lastErrorToastTime = 0;
+const showErrorToast = (msg) => {
+  const now = Date.now();
+  if (now - lastErrorToastTime > 2500) {
+    toast.error(msg);
+    lastErrorToastTime = now;
+  }
+};
+
+// Request interceptor: attach token if present & not expired
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('jobshield_token');
+    if (token) {
+      if (isTokenExpired(token)) {
+        localStorage.removeItem('jobshield_token');
+        localStorage.removeItem('jobshield_user');
+      } else {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor: handle status codes
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      const { status } = error.response;
+
+      if (status === 401) {
+        localStorage.removeItem('jobshield_token');
+        localStorage.removeItem('jobshield_user');
+        const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/check-email', '/verify-email', '/campaigns', '/community-reports'];
+        const isPublicPath = publicPaths.some(p => window.location.pathname === p || window.location.pathname.startsWith('/campaigns/'));
+        if (!isPublicPath && window.location.pathname !== '/login') {
+          showErrorToast('Session expired. Please log in again.');
+          window.location.href = '/login';
+        }
+      } else if (status === 403) {
+        showErrorToast('Access denied.');
+      } else if (status === 429) {
+        showErrorToast('Too many requests. Please slow down.');
+      } else if (status === 500) {
+        showErrorToast(error.response?.data?.message || 'Server error. Please try again later.');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Backward-compatible helpers & exports
 const TOKEN_KEY = 'jobshield_token';
 const USER_KEY = 'jobshield_user';
 
-// Token helpers
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
 export const removeToken = () => {
@@ -26,7 +94,7 @@ export const getSavedUser = () => {
   try {
     const raw = localStorage.getItem(USER_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -41,198 +109,72 @@ export const setSavedUser = (user) => {
 
 export const isAuthenticated = () => {
   const token = getToken();
-  return !!token && token.trim().length > 0;
+  return Boolean(token && token.trim().length > 0);
 };
-
-/**
- * Execute fetch request with automatic JWT auth header, error handling, and proxy support.
- */
-async function apiFetch(endpoint, options = {}) {
-  const token = getToken();
-  const headers = { ...options.headers };
-
-  // Attach Bearer token if present
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  // If not FormData, ensure Content-Type is application/json if sending a body
-  if (!(options.body instanceof FormData) && options.body && !headers['Content-Type']) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  const fetchOptions = {
-    ...options,
-    headers,
-  };
-
-  const targetUrl = `${API_BASE_URL}${endpoint}`;
-
-  let res;
-  try {
-    res = await fetch(targetUrl, fetchOptions);
-  } catch (err) {
-    // Typical browser network error when server is unreachable or CORS blocked
-    throw new Error(
-      'Cannot connect to JobShield backend at http://localhost:8081. Please ensure your Spring Boot server is started and running.'
-    );
-  }
-
-  // Handle 502/503/504 Bad Gateway from Vite proxy when port 8081 is offline
-  if (res.status === 502 || res.status === 503 || res.status === 504) {
-    throw new Error(
-      'JobShield backend is not reachable at http://localhost:8081. Please start the Spring Boot application.'
-    );
-  }
-
-  // If unauthorized or forbidden, clear token and notify auth state
-  if (res.status === 401 || res.status === 403) {
-    removeToken();
-    const publicPaths = ['/', '/login', '/register'];
-    if (!publicPaths.includes(window.location.pathname)) {
-      window.location.href = '/login?expired=true';
-    }
-    throw new Error('Session expired or unauthorized. Please log in again.');
-  }
-
-  // Attempt to parse response body
-  const contentType = res.headers.get('content-type') || '';
-  let data;
-  if (contentType.includes('application/json')) {
-    data = await res.json();
-  } else {
-    data = await res.text();
-  }
-
-  if (!res.ok) {
-    let errorMessage = 'An error occurred';
-    if (typeof data === 'object' && data !== null) {
-      errorMessage = data.message || data.error || JSON.stringify(data);
-    } else if (typeof data === 'string' && data.trim().length > 0) {
-      errorMessage = data;
-    }
-    throw new Error(errorMessage);
-  }
-
-  return data;
-}
-
-// ==========================================
-// Authentication APIs
-// ==========================================
 
 export const authApi = {
-  /**
-   * Register a new user
-   * POST /api/auth/register
-   */
   register: async (payload) => {
-    return apiFetch('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    const res = await apiClient.post('/api/auth/register', payload);
+    return res.data;
   },
-
-  /**
-   * Login user and receive JWT token
-   * POST /api/auth/login
-   */
   login: async (credentials) => {
-    const data = await apiFetch('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-    if (data && data.token) {
-      setToken(data.token);
+    const res = await apiClient.post('/api/auth/login', credentials);
+    if (res.data?.token) {
+      setToken(res.data.token);
     }
-    return data;
+    if (res.data?.user) {
+      setSavedUser(res.data.user);
+    }
+    return res.data;
   },
-
-  /**
-   * Fetch current authenticated user's profile
-   * GET /api/auth/me
-   */
   getProfile: async () => {
-    const user = await apiFetch('/api/auth/me', {
-      method: 'GET',
-    });
-    setSavedUser(user);
-    return user;
+    const res = await apiClient.get('/api/auth/me');
+    setSavedUser(res.data);
+    return res.data;
   },
-
-  logout: () => {
+  logout: async () => {
+    try {
+      await apiClient.post('/api/auth/logout');
+    } catch {
+      // ignore
+    }
     removeToken();
   },
 };
 
-// ==========================================
-// Job Analysis & Dashboard APIs
-// ==========================================
-
 export const jobApi = {
-  /**
-   * Analyze job posting description text
-   * POST /api/jobs/analyze
-   */
   analyzeJob: async (jobData) => {
-    return apiFetch('/api/jobs/analyze', {
-      method: 'POST',
-      body: JSON.stringify(jobData),
-    });
+    const res = await apiClient.post('/api/jobs/analyze', jobData);
+    return res.data;
   },
-
-  /**
-   * Upload and analyze a PDF offer letter
-   * POST /api/jobs/analyze-pdf
-   * Note: Do NOT set Content-Type header manually for FormData.
-   */
   analyzePdf: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-
-    return apiFetch('/api/jobs/analyze-pdf', {
-      method: 'POST',
-      body: formData,
+    const res = await apiClient.post('/api/jobs/analyze-pdf', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return res.data;
   },
-
-  /**
-   * Fetch user's scan history
-   * GET /api/jobs/history
-   */
+  analyzeUrl: async (urlData) => {
+    const res = await apiClient.post('/api/jobs/analyze-url', urlData);
+    return res.data;
+  },
   getHistory: async () => {
-    return apiFetch('/api/jobs/history', {
-      method: 'GET',
-    });
+    const res = await apiClient.get('/api/jobs/history');
+    return res.data;
   },
-
-  /**
-   * Fetch specific job analysis details by ID
-   * GET /api/jobs/{analysisId}
-   */
   getAnalysisById: async (analysisId) => {
-    return apiFetch(`/api/jobs/${analysisId}`, {
-      method: 'GET',
-    });
+    const res = await apiClient.get(`/api/jobs/${analysisId}`);
+    return res.data;
   },
-
-  /**
-   * Fetch user scan dashboard statistics
-   * GET /api/jobs/dashboard
-   */
   getDashboard: async () => {
-    return apiFetch('/api/jobs/dashboard', {
-      method: 'GET',
-    });
+    const res = await apiClient.get('/api/jobs/dashboard');
+    return res.data;
   },
-
-  /**
-   * Fetch grouped scam campaigns
-   * GET /api/jobs/campaigns
-   */
   getCampaigns: async () => {
-    return apiFetch('/api/jobs/campaigns', {
-      method: 'GET',
-    });
+    const res = await apiClient.get('/api/jobs/campaigns');
+    return res.data;
   },
 };
+
+export default apiClient;

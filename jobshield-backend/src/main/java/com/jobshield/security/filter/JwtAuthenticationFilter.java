@@ -46,23 +46,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String jwt = authHeader.substring(7);
 
-        String email = jwtService.extractUsername(jwt);
+        try {
+            String email = jwtService.extractUsername(jwt);
 
-        if (email != null &&
-            SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (email != null &&
+                SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            UserDetails userDetails =
-                    userDetailsService.loadUserByUsername(email);
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-            	UsernamePasswordAuthenticationToken authToken =
-            	        new UsernamePasswordAuthenticationToken(
-            	                userDetails,
-            	                null,
-            	                userDetails.getAuthorities()
-            	        );
-            	SecurityContextHolder.getContext().setAuthentication(authToken);
+                UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(email);
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
-
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            // Token has expired: do not set authentication, log debug/info
+            logger.debug("Expired JWT token received: " + e.getMessage());
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            // Malformed, unsupported, or bad signature: do not set authentication
+            logger.debug("Invalid JWT token received: " + e.getMessage());
+        } catch (Exception e) {
+            logger.warn("Unexpected error during JWT authentication: " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);
