@@ -18,8 +18,8 @@ import authService from '../services/authService';
 const schema = yup.object({
   email: yup
     .string()
-    .required('Email is required')
-    .email('Please enter a valid email address'),
+    .required('Username or email is required')
+    .min(3, 'Must be at least 3 characters'),
   password: yup
     .string()
     .required('Password is required')
@@ -186,16 +186,16 @@ const LoginPage = () => {
             {/* Email Field */}
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                Email address
+                Username or Email address
               </label>
               <div className="relative rounded-lg shadow-xs">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                   <EnvelopeIcon className="w-5 h-5" />
                 </div>
                 <input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="name@example.com"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="Username (e.g. naga) or email"
                   {...register('email')}
                   className={`block w-full pl-10 pr-3 py-2.5 text-sm rounded-lg border bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
                     errors.email ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-300'

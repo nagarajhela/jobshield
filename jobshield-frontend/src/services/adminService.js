@@ -70,6 +70,11 @@ export const createCampaign = async (campaignData) => {
   return response.data;
 };
 
+export const getCampaigns = async (params = {}) => {
+  const response = await apiClient.get('/api/campaigns', { params });
+  return response.data;
+};
+
 export const deleteCampaign = async (campaignId) => {
   const response = await apiClient.delete(`/api/admin/campaigns/${campaignId}`);
   return response.data;
@@ -105,6 +110,7 @@ export const adminService = {
   deleteAnalysis,
   deleteUser,
   createCampaign,
+  getCampaigns,
   deleteCampaign,
   getReports,
   deleteReport,

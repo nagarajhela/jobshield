@@ -206,9 +206,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(noRollbackFor = {BadRequestException.class, AccountUnverifiedException.class})
     public User login(LoginRequest request) {
-        logger.info("Processing user login for email: {}", request.getEmail());
+        String identifier = request.getEmail() != null ? request.getEmail().trim() : "";
+        logger.info("Processing user login for identifier: {}", identifier);
 
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(identifier)
+                .or(() -> userRepository.findByEmail(identifier + "@jobshield.com"))
                 .orElseThrow(() -> new BadRequestException("Invalid email or password"));
 
         // Check if locked_until > now

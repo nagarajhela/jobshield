@@ -17,6 +17,18 @@ import Navbar from '../components/layout/Navbar';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import campaignService from '../services/campaignService';
 
+export const parseJobTitles = (titles) => {
+  if (!titles) return [];
+  if (Array.isArray(titles)) return titles;
+  if (typeof titles === 'string') {
+    return titles
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
 const CampaignsPage = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -130,14 +142,15 @@ const CampaignsPage = () => {
   }, [effectiveCampaigns]);
 
   const activeCount = useMemo(() => {
-    return effectiveCampaigns.filter((c) => c.isActive).length;
+    return effectiveCampaigns.filter((c) => (c.active !== undefined ? c.active : c.isActive)).length;
   }, [effectiveCampaigns]);
 
   // Filtered and Sorted Campaigns
   const filteredCampaigns = useMemo(() => {
     return effectiveCampaigns
       .filter((c) => {
-        if (activeOnly && !c.isActive) return false;
+        const isCampActive = c.active !== undefined ? c.active : c.isActive;
+        if (activeOnly && !isCampActive) return false;
         if (severityFilter !== 'ALL' && (c.severity || '').toUpperCase() !== severityFilter) {
           return false;
         }
@@ -145,7 +158,8 @@ const CampaignsPage = () => {
           const q = search.toLowerCase();
           const matchTitle = (c.title || '').toLowerCase().includes(q);
           const matchDesc = (c.description || '').toLowerCase().includes(q);
-          const matchTitles = (c.targetedJobTitles || []).some((t) => t.toLowerCase().includes(q));
+          const titlesList = parseJobTitles(c.targetedJobTitles);
+          const matchTitles = titlesList.some((t) => t.toLowerCase().includes(q));
           if (!matchTitle && !matchDesc && !matchTitles) return false;
         }
         return true;
@@ -343,12 +357,12 @@ const CampaignsPage = () => {
 
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                            camp.isActive
+                            ((camp.active !== undefined ? camp.active : camp.isActive) ?? true)
                               ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-gray-100 text-gray-600'
                           }`}
                         >
-                          {camp.isActive ? 'Active' : 'Inactive'}
+                          {((camp.active !== undefined ? camp.active : camp.isActive) ?? true) ? 'Active' : 'Inactive'}
                         </span>
                       </div>
 
@@ -379,27 +393,35 @@ const CampaignsPage = () => {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1.5">
                           Targeted Job Titles
                         </span>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {(camp.targetedJobTitles || []).slice(0, 3).map((t, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold"
-                            >
-                              {t}
-                            </span>
-                          ))}
-                          {(camp.targetedJobTitles || []).length > 3 && (
-                            <span className="text-xs text-gray-400 font-bold">
-                              +{(camp.targetedJobTitles || []).length - 3} more
-                            </span>
-                          )}
-                        </div>
+                        {(() => {
+                          const titles = parseJobTitles(camp.targetedJobTitles);
+                          return (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {titles.slice(0, 3).map((t, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold"
+                                >
+                                  {t}
+                                </span>
+                              ))}
+                              {titles.length > 3 && (
+                                <span className="text-xs text-gray-400 font-bold">
+                                  +{titles.length - 3} more
+                                </span>
+                              )}
+                              {titles.length === 0 && (
+                                <span className="text-xs text-gray-400 italic">Various positions</span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Platform Origin */}
                       <p className="text-xs text-gray-500 flex items-center gap-1">
                         <DevicePhoneMobileIcon className="w-3.5 h-3.5 text-gray-400" />
-                        <span>Originated from: <strong>{camp.platform || 'Unknown'}</strong></span>
+                        <span>Originated from: <strong>{camp.platformOrigin || camp.platform || 'Unknown'}</strong></span>
                       </p>
                     </div>
                   </div>

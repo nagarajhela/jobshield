@@ -20,6 +20,18 @@ import Navbar from '../components/layout/Navbar';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import campaignService from '../services/campaignService';
 
+const parseJobTitles = (titles) => {
+  if (!titles) return [];
+  if (Array.isArray(titles)) return titles;
+  if (typeof titles === 'string') {
+    return titles
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
 const CampaignDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -201,7 +213,7 @@ const CampaignDetailPage = () => {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {(details.targetedJobTitles || []).map((title, idx) => (
+                {parseJobTitles(details.targetedJobTitles).map((title, idx) => (
                   <span
                     key={idx}
                     className="px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-800 text-xs sm:text-sm font-bold border border-blue-200"
@@ -209,6 +221,9 @@ const CampaignDetailPage = () => {
                     {title}
                   </span>
                 ))}
+                {parseJobTitles(details.targetedJobTitles).length === 0 && (
+                  <span className="text-xs text-gray-400 italic">Various positions</span>
+                )}
               </div>
             </div>
 

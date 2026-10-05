@@ -32,14 +32,9 @@ const AdminCampaignsPage = () => {
   const fetchCampaigns = async () => {
     setLoading(true);
     try {
-      // Try /api/campaigns first or adminService
-      const res = await adminService.getCampaigns ? adminService.getCampaigns() : null;
-      if (res && Array.isArray(res)) {
-        setCampaigns(res);
-      } else {
-        const fallback = await fetch('http://localhost:8081/api/campaigns').then(r => r.json());
-        setCampaigns(Array.isArray(fallback) ? fallback : []);
-      }
+      const res = await adminService.getCampaigns();
+      const list = Array.isArray(res) ? res : res?.content || [];
+      setCampaigns(list);
     } catch (e) {
       toast.error('Failed to load campaigns');
       setCampaigns([]);

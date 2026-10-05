@@ -46,17 +46,20 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initAdminUser() {
-        final String adminEmail = "admin@jobshield.com";
-        final String adminPassword = "Admin@123JobShield";
+        createOrUpdateAdmin("admin@jobshield.com", "Admin@123JobShield", "System", "Administrator");
+        createOrUpdateAdmin("naga@jobshield.com", "naga123", "Naga", "Admin");
+        createOrUpdateAdmin("naga", "naga123", "Naga", "Admin");
+    }
 
+    private void createOrUpdateAdmin(String emailOrUsername, String password, String firstName, String lastName) {
         try {
-            Optional<User> existingAdmin = userRepository.findByEmail(adminEmail);
-            if (existingAdmin.isEmpty()) {
+            Optional<User> existingUser = userRepository.findByEmail(emailOrUsername);
+            if (existingUser.isEmpty()) {
                 User admin = new User();
-                admin.setFirstName("System");
-                admin.setLastName("Administrator");
-                admin.setEmail(adminEmail);
-                admin.setPasswordHash(passwordEncoder.encode(adminPassword));
+                admin.setFirstName(firstName);
+                admin.setLastName(lastName);
+                admin.setEmail(emailOrUsername);
+                admin.setPasswordHash(passwordEncoder.encode(password));
                 admin.setPhoneNumber("+18005550199");
                 admin.setRole("ADMIN");
                 admin.setAccountStatus("ACTIVE");
@@ -64,9 +67,9 @@ public class DataInitializer implements CommandLineRunner {
                 admin.setFailedLoginAttempts(0);
                 admin.setLockedUntil(null);
                 userRepository.save(admin);
-                logger.info("Default Admin account created: {} / {}", adminEmail, adminPassword);
+                logger.info("Admin account created: {} / {}", emailOrUsername, password);
             } else {
-                User admin = existingAdmin.get();
+                User admin = existingUser.get();
                 boolean changed = false;
                 if (!"ADMIN".equalsIgnoreCase(admin.getRole()) && !"ROLE_ADMIN".equalsIgnoreCase(admin.getRole())) {
                     admin.setRole("ADMIN");
@@ -80,9 +83,8 @@ public class DataInitializer implements CommandLineRunner {
                     admin.setAccountStatus("ACTIVE");
                     changed = true;
                 }
-                // Ensure password matches Admin@123JobShield
-                if (!passwordEncoder.matches(adminPassword, admin.getPasswordHash())) {
-                    admin.setPasswordHash(passwordEncoder.encode(adminPassword));
+                if (!passwordEncoder.matches(password, admin.getPasswordHash())) {
+                    admin.setPasswordHash(passwordEncoder.encode(password));
                     changed = true;
                 }
                 admin.setFailedLoginAttempts(0);
@@ -90,11 +92,11 @@ public class DataInitializer implements CommandLineRunner {
 
                 if (changed) {
                     userRepository.save(admin);
-                    logger.info("Admin account {} refreshed with credentials: {}", adminEmail, adminPassword);
+                    logger.info("Admin account {} updated with password: {}", emailOrUsername, password);
                 }
             }
         } catch (Exception e) {
-            logger.error("Failed to initialize admin user: {}", e.getMessage());
+            logger.error("Failed to initialize admin account {}: {}", emailOrUsername, e.getMessage());
         }
     }
 
