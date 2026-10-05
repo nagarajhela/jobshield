@@ -19,7 +19,10 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
+    && mkdir -p /app/logs \
+    && chown -R appuser:appgroup /app
+
 USER appuser
 
 COPY --from=build --chown=appuser:appgroup /app/target/*.jar app.jar
