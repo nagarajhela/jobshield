@@ -114,6 +114,8 @@ const RegisterPage = () => {
 
       if (status === 409 || serverMessage.toLowerCase().includes('already registered')) {
         setErrorMessage('Email already registered.');
+      } else if (!error.response || error.code === 'ERR_NETWORK') {
+        setErrorMessage('Cannot connect to backend server. Please verify your backend API is online and reachable.');
       } else {
         setErrorMessage(serverMessage || 'Registration failed. Please try again.');
       }

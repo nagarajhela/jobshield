@@ -75,6 +75,8 @@ const LoginPage = () => {
         setErrorMessage('Invalid email or password.');
       } else if (status === 429) {
         setErrorMessage('Too many requests. Please wait before trying again.');
+      } else if (!error.response || error.code === 'ERR_NETWORK') {
+        setErrorMessage('Cannot connect to backend server. Please verify your backend API is online and reachable.');
       } else {
         setErrorMessage(serverMessage || 'An unexpected error occurred. Please try again.');
       }
